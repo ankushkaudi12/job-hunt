@@ -230,36 +230,6 @@ export async function getJobsSummaryForEmployer(req, res) {
   }
 }
 
-export async function getJobsByDomain(req, res) {
-  const { domain, userId } = req.query;
-  console.log("[getJobsByDomain] domain:", domain, "userId:", userId);
-
-  try {
-    if (!domain || !userId) {
-      return res
-        .status(400)
-        .json({ message: "Domain and user ID are required." });
-    }
-
-    const appliedJobs = await Application.find({ userId }).select("jobId");
-    const appliedJobIds = appliedJobs.map((app) => app.jobId.toString());
-
-    const jobs = await Job.find({
-      domain,
-      status: "open",
-      _id: { $nin: appliedJobIds },
-    });
-
-    console.log(
-      `[getJobsByDomain] Found ${jobs.length} jobs in domain '${domain}' not applied by user`
-    );
-    res.status(200).json(jobs);
-  } catch (err) {
-    console.error("[getJobsByDomain] Error:", err);
-    res.status(500).json({ message: "Internal server error." });
-  }
-}
-
 export async function getJobById(req, res) {
   const jobId = req.params.jobId;
   console.log("[getJobById] jobId:", jobId);

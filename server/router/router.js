@@ -17,7 +17,6 @@ import {
   deleteJob,
   updateJob,
   getJobsSummaryForEmployer,
-  getJobsByDomain,
   getJobById,
   getJobsForEmployer,
   searchJobsForUsers,
@@ -1207,39 +1206,80 @@ router.get(
   getUserNotifications
 );
 
-router.get("/appliedJobs/:userId", getUserAppliedJobs);
-
 /**
  * @swagger
- * /jobs-by-domain:
+ * /appliedJobs/{userId}:
  *   get:
- *     summary: Get open jobs by domain not yet applied to by the user
+ *     summary: Get paginated list of jobs a user has applied to
+ *     description: Retrieve jobs that a specific user has applied to, with pagination support.
  *     tags:
- *       - Jobs
+ *       - Applications
  *     parameters:
- *       - in: query
- *         name: domain
- *         required: true
- *         schema:
- *           type: string
- *         description: The job domain to filter by (e.g., Engineering, Design)
- *       - in: query
+ *       - in: path
  *         name: userId
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the user (used to exclude already applied jobs)
+ *           format: ObjectId
+ *         description: The ID of the user
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 5
+ *         description: Number of results per page
  *     responses:
  *       200:
- *         description: List of open jobs in the domain not applied to by the user
+ *         description: A list of jobs the user has applied to
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Job'
+ *               type: object
+ *               properties:
+ *                 currentPage:
+ *                   type: integer
+ *                   example: 1
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 3
+ *                 totalApplications:
+ *                   type: integer
+ *                   example: 12
+ *                 jobs:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       applicationId:
+ *                         type: string
+ *                         format: ObjectId
+ *                         example: "64e5e99af7c3c27c8492b930"
+ *                       _id:
+ *                         type: string
+ *                         format: ObjectId
+ *                         example: "64e5e987f7c3c27c8492b92f"
+ *                       title:
+ *                         type: string
+ *                         example: "Software Engineer"
+ *                       company:
+ *                         type: string
+ *                         example: "TechCorp Inc."
+ *                       location:
+ *                         type: string
+ *                         example: "San Francisco, CA"
+ *                       status:
+ *                         type: string
+ *                         example: "pending"
  *       400:
- *         description: Missing domain or userId
+ *         description: Invalid user ID format
  *         content:
  *           application/json:
  *             schema:
@@ -1247,9 +1287,9 @@ router.get("/appliedJobs/:userId", getUserAppliedJobs);
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Domain and user ID are required.
+ *                   example: "Invalid User ID format."
  *       500:
- *         description: Internal server error while retrieving jobs
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -1257,9 +1297,9 @@ router.get("/appliedJobs/:userId", getUserAppliedJobs);
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Internal server error.
+ *                   example: "Internal server error"
  */
-router.get("/jobs-by-domain", getJobsByDomain);
+router.get("/appliedJobs/:userId", getUserAppliedJobs);
 
 /**
  * @swagger
@@ -1339,103 +1379,6 @@ router.get(
   requireRole(["employer"]),
   getJobById
 );
-
-/**
- * @swagger
- * /getJobsForUser:
- *   get:
- *     summary: Search and retrieve paginated list of open jobs for a user
- *     tags:
- *       - Jobs
- *     parameters:
- *       - in: query
- *         name: domain
- *         schema:
- *           type: string
- *         required: false
- *         description: Specific job domain to filter by (used if no search term is provided)
- *       - in: query
- *         name: preferredDomain
- *         schema:
- *           type: string
- *         required: false
- *         description: User's preferred job domain (used as a fallback if domain is not specified)
- *       - in: query
- *         name: experience
- *         schema:
- *           type: number
- *         required: false
- *         description: Filter jobs requiring up to this many years of experience
- *       - in: query
- *         name: expectedSalary
- *         schema:
- *           type: number
- *         required: false
- *         description: Filter jobs offering at least this salary
- *       - in: query
- *         name: type
- *         schema:
- *           type: string
- *         required: false
- *         description: Type of job (e.g., full-time, part-time, internship)
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         required: false
- *         description: Keyword search across job title, company, location, and skills
- *       - in: query
- *         name: userId
- *         schema:
- *           type: string
- *         required: false
- *         description: The ID of the user to exclude already applied jobs
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         required: false
- *         description: Page number for pagination (12 jobs per page)
- *     responses:
- *       200:
- *         description: List of matching jobs retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 jobs:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Job'
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     total:
- *                       type: integer
- *                       example: 36
- *                     page:
- *                       type: integer
- *                       example: 1
- *                     totalPages:
- *                       type: integer
- *                       example: 3
- *       500:
- *         description: Internal server error during job search
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Internal server error
- *                 error:
- *                   type: string
- *                   example: Error message details
- */
-router.get("/getJobsForUser", searchJobsForUsers);
 
 /**
  * @swagger

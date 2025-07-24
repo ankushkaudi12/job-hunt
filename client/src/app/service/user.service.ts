@@ -26,6 +26,7 @@ export class UserService {
       headers,
     });
   }
+  
   getUserStatusSummary(userId: string, token: string) {
     return this.http.get<any>(
       `${environment.apiUrl}/user/${userId}/status-summary`,
